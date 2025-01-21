@@ -1,4 +1,4 @@
-import { countQuestions, countUsersConnectedSurveys, countUsersResponses, createOption, createQuestion, createSurvey, createSurveyResponses, deleteSurvey, FetchSurveyQuestionById, FetchSurveyQuestions, FetchSurveyQuestionsDisplay, FetchSurveyQuestionsToDisplay, FetchSurveyQuestionsWeb, findAllTheSurveyResponses, GetAllSurveyByUserType, getSurvey, getSurveyById, updateOption, updateQuestion, updateStatus, updateStatusQuestion, updateSurvey } from "../model/Surveys.js";
+import { countQuestions, countUsersConnectedSurveys, countUsersResponses, createOption, createQuestion, createSurvey, createSurveyResponses, deleteSurvey, deleteSurveyResponses, FetchSurveyQuestionById, FetchSurveyQuestions, FetchSurveyQuestionsDisplay, FetchSurveyQuestionsToDisplay, FetchSurveyQuestionsWeb, findAllTheSurveyResponses, GetAllSurveyByUserType, getQuestionDetails, getSurvey, getSurveyById, getSurveyResponse, updateOption, updateQuestion, updateStatus, updateStatusQuestion, updateSurvey, updateSurveyResponse } from "../model/Surveys.js";
 import { applySearchAndPagination, sendErrorResponse, sendSuccessResponse } from "../utility/common.js";
 import { Op } from "sequelize";
 
@@ -272,12 +272,12 @@ export const FetchQuestionsWeb = async (req, res) => {
 };
 
 export const UpdateSurveyQuestion = async (req, res) => {
-  const { id, question, question_type, placeholder, scale, min, max, step, isRequired, options, survey_code } = req.body;
+  const { id, question, question_type, placeholder, scale, min, max, step, is_required, options, survey_code } = req.body;
 
   try {
     let surveyQuestion;
     if (id) {
-      surveyQuestion = await updateQuestion({question_label:question, question_type, placeholder, scale, min, max, step, is_required: isRequired },id) 
+      surveyQuestion = await updateQuestion({question_label:question, question_type, placeholder, scale, min, max, step, is_required: is_required },id) 
     } 
 
     const newOptions = [];
@@ -303,97 +303,6 @@ export const UpdateSurveyQuestion = async (req, res) => {
   } catch (error) {
     console.error(error);
     sendErrorResponse(res,'Survey not found');
-  }
-};
-
-export const saveSurveyResponses = async (req, res) => {
-  const user_id = req.userId;
-  const { survey_code, question_id, answer, question_type } = req.body;
-
-  try {
-    let fileUrl = null;
-
-    if (req.file) {
-      fileUrl = `assets/images/${req.file.filename}`;
-    }
-
-    if (question_type === 'MULTISELECT') {
-      if (!Array.isArray(answer)) {
-        throw new Error('Answer for MULTISELECT must be an array.');
-      }
-
-      const responsePromises = answer.map(async (option) => {
-        await createSurveyResponses({
-          survey_code,
-          question_id,
-          user_id,
-          responses: option, 
-        });
-      });
-      await Promise.all(responsePromises);
-
-      sendSuccessResponse(res, 'Responses saved successfully!', '');
-      return;
-    }
-
-    let formattedResponse;
-
-    switch (question_type) {
-      case 'INPUT':
-        formattedResponse = answer;
-        break;
-
-      case 'DECIMAL':
-        if (typeof answer !== 'number' || !Number.isFinite(answer) || Number.isInteger(answer)) {
-          throw new Error('Answer for DECIMAL must be a decimal number.');
-        }
-        formattedResponse = answer;
-        break;
-
-      case 'WHOLE_NUMBER':
-      case 'SINGLE_SELECTION':
-      case 'DROPDOWN':
-        if (!Number.isInteger(answer)) {
-          throw new Error(`Answer for ${question_type} must be an integer.`);
-        }
-        formattedResponse = answer;
-        break;
-
-      case 'TRUE_FALSE':
-        if (typeof answer !== 'boolean') {
-          throw new Error('Answer for TRUE_FALSE must be a boolean (true/false).');
-        }
-        formattedResponse = answer;
-        break;
-
-      case 'IMAGE_INPUT':
-      case 'VIDEO_INPUT':
-      case 'AUDIO_INPUT':
-      case 'SIGNATURE_INPUT':
-        if (!fileUrl) {
-          throw new Error(`File URL is required for ${question_type}.`);
-        }
-        formattedResponse = fileUrl;
-        break;
-
-      default:
-        throw new Error(`Unsupported question type: ${question_type}`);
-    }
-    const result = await createSurveyResponses({
-      survey_code,
-      question_id,
-      user_id,
-      responses: formattedResponse,
-    });
-
-    if (!result.code) {
-      throw new Error(result.res);
-    }
-
-    sendSuccessResponse(res, 'Responses saved successfully!', '');
-  } catch (error) {
-    console.error('Error saving responses:', error.message);
-    sendErrorResponse(res, 'Error saving responses');
   }
 };
 
@@ -463,3 +372,239 @@ export const getAllCountByResponses = async(req,res) =>{
     sendErrorResponse(res, 500, "Failed to fetch count by Responses");
   }
 }
+
+export const saveSurveyResponses = async (req, res) => {
+  const user_id = req.userId;
+  const { survey_code, question_id, answer, question_type } = req.body;
+
+  try {
+    const question = await getQuestionDetails({ survey_code, question_id });
+
+    console.log("question",question)
+
+    if (!question) {
+      throw new Error(`Question with ID ${question_id} and Survey Code ${survey_code} not found.`);
+    }
+
+    const { is_required } =  question.res.dataValues;
+
+    console.log("is_required",is_required);
+
+    if (is_required === 1) {
+      if (answer === undefined || answer === null || answer === '') {
+        throw new Error('This question is required. A response must be provided.');
+      }
+    } else if (is_required === 0) {
+      if (answer === undefined || answer === null || answer === '') {
+        sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
+        return;
+      }
+    }
+
+    let fileUrl = null;
+
+    if (req.file) {
+      fileUrl = `assets/images/${req.file.filename}`;
+    }
+
+    if (question_type === 'MULTISELECT') {
+      if (!Array.isArray(answer)) {
+        throw new Error('Answer for MULTISELECT must be an array.');
+      }
+
+      const responsePromises = answer.map(async (option) => {
+        await createSurveyResponses({
+          survey_code,
+          question_id,
+          user_id,
+          responses: option,
+        });
+      });
+      await Promise.all(responsePromises);
+
+      sendSuccessResponse(res, 'Responses saved successfully!', '');
+      return;
+    }
+
+    let formattedResponse;
+
+    switch (question_type) {
+      case 'INPUT':
+        formattedResponse = answer;
+        break;
+
+      case 'DECIMAL':
+        if (typeof answer !== 'number' || !Number.isFinite(answer) || Number.isInteger(answer)) {
+          throw new Error('Answer for DECIMAL must be a decimal number.');
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'WHOLE_NUMBER':
+      case 'SINGLE_SELECTION':
+      case 'DROPDOWN':
+        if (!Number.isInteger(answer)) {
+          throw new Error(`Answer for ${question_type} must be an integer.`);
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'TRUE_FALSE':
+        if (typeof answer !== 'boolean') {
+          throw new Error('Answer for TRUE_FALSE must be a boolean (true/false).');
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'IMAGE_INPUT':
+      case 'VIDEO_INPUT':
+      case 'AUDIO_INPUT':
+      case 'SIGNATURE_INPUT':
+        if (!fileUrl) {
+          throw new Error(`File URL is required for ${question_type}.`);
+        }
+        formattedResponse = fileUrl;
+        break;
+
+      default:
+        throw new Error(`Unsupported question type: ${question_type}`);
+    }
+    const result = await createSurveyResponses({
+      survey_code,
+      question_id,
+      user_id,
+      responses: formattedResponse,
+    });
+
+    if (!result.code) {
+      throw new Error(result.res);
+    }
+
+    sendSuccessResponse(res, 'Responses saved successfully!', '');
+  } catch (error) {
+    console.error('Error saving responses:', error.message);
+    sendErrorResponse(res, 'Error saving responses');
+  }
+};
+
+
+export const updateSurveyResponses = async (req, res) => {
+  const user_id = req.userId;
+  const { survey_code, question_id, answer, question_type, id } = req.body;
+
+  try {
+    const question = await getQuestionDetails({ survey_code, question_id });
+
+    if (!question) {
+      throw new Error(`Question with ID ${question_id} and Survey Code ${survey_code} not found.`);
+    }
+
+    const { is_required } = question.res.dataValues;
+
+    if (is_required === 1 && (answer === undefined || answer === null || answer === '')) {
+      throw new Error('This question is required. A response must be provided.');
+    }
+
+    if (is_required === 0 && (answer === undefined || answer === null || answer === '')) {
+      sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
+      return;
+    }
+
+    let fileUrl = null;
+    if (req.file) {
+      fileUrl = `assets/images/${req.file.filename}`;
+    }
+
+    const existingResponse = id 
+      ? await getSurveyResponse({ survey_code, question_id, user_id, id }) 
+      : null;
+
+      if (question_type === 'MULTISELECT') {
+        if (!Array.isArray(answer)) {
+          throw new Error('Answer for MULTISELECT must be an array.');
+        }
+
+        const deleteResult = await deleteSurveyResponses({ survey_code, question_id, user_id });
+        if (!deleteResult.code) {
+          throw new Error('Failed to delete existing MULTISELECT responses.');
+        }
+  
+        const responsePromises = answer.map(async (option) => {
+          await createSurveyResponses({
+            survey_code,
+            question_id,
+            user_id,
+            responses: option,
+          });
+        });
+        await Promise.all(responsePromises);
+  
+        sendSuccessResponse(res, 'Responses saved successfully!', '');
+        return;
+      }
+  
+    let formattedResponse;
+    switch (question_type) {
+      case 'INPUT':
+        formattedResponse = answer;
+        break;
+
+      case 'DECIMAL':
+        if (typeof answer !== 'number' || !Number.isFinite(answer) || Number.isInteger(answer)) {
+          throw new Error('Answer for DECIMAL must be a decimal number.');
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'WHOLE_NUMBER':
+      case 'SINGLE_SELECTION':
+      case 'DROPDOWN':
+        if (!Number.isInteger(answer)) {
+          throw new Error(`Answer for ${question_type} must be an integer.`);
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'TRUE_FALSE':
+        if (typeof answer !== 'boolean') {
+          throw new Error('Answer for TRUE_FALSE must be a boolean (true/false).');
+        }
+        formattedResponse = answer;
+        break;
+
+      case 'IMAGE_INPUT':
+      case 'VIDEO_INPUT':
+      case 'AUDIO_INPUT':
+      case 'SIGNATURE_INPUT':
+        if (!fileUrl) {
+          throw new Error(`File URL is required for ${question_type}.`);
+        }
+        formattedResponse = fileUrl;
+        break;
+
+      default:
+        throw new Error(`Unsupported question type: ${question_type}`);
+    }
+
+    if (existingResponse?.code) {
+      const updateResult = await updateSurveyResponse({
+        survey_code,
+        question_id,
+        user_id,
+        responses: formattedResponse,
+        response_id: id,
+      });
+
+      if (!updateResult.code) {
+        throw new Error(updateResult.res);
+      }
+
+      sendSuccessResponse(res, 'Response updated successfully!', '');
+    } else {
+      sendErrorResponse(res, 'No response found to update, and insertion is not allowed.');
+    }
+  } catch (error) {
+    console.error('Error handling response:', error.message);
+    sendErrorResponse(res, `Error handling response: ${error.message}`);
+  }
+};

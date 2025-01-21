@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { AddSurvey, DeleteSurveyName, FetchQuestionById, FetchQuestions, FetchQuestionsDisplay, FetchQuestionsWeb, getAllCountByResponses, GetAllSurvey, getSurveyStatistics, SaveSurveyQuestion, saveSurveyResponses, UpdateOptionStatus, UpdateQuestionStatus, UpdateSurveyName, UpdateSurveyQuestion } from "../controller/Surveys.js";
+import { AddSurvey, DeleteSurveyName, FetchQuestionById, FetchQuestions, FetchQuestionsDisplay, FetchQuestionsWeb, getAllCountByResponses, GetAllSurvey, getSurveyStatistics, SaveSurveyQuestion, saveSurveyResponses, UpdateOptionStatus, UpdateQuestionStatus, UpdateSurveyName, UpdateSurveyQuestion, updateSurveyResponses } from "../controller/Surveys.js";
 
 const route = Router();
 
@@ -20,5 +20,6 @@ route.put("/updateQuestionStatus",UpdateQuestionStatus);
 route.get("/getSurveyStatistics",getSurveyStatistics);
 route.get("/getAllCountByResponses",getAllCountByResponses);
 route.post("/saveSurveyResponses",saveSurveyResponses)
+route.put("/updateSurveyResponses",updateSurveyResponses)
 
 export default route;

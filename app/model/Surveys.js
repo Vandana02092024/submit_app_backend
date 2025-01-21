@@ -465,3 +465,73 @@ export const findAllTheSurveyResponses = async(survey_code,questionId) =>{
     return { code: false, res: error.message };
   }
 }
+
+
+export const getQuestionDetails = async ({ survey_code, question_id }) => {
+  try {
+    const res =  await SurveyQuestions.findOne({
+      where: { survey_code, question_id },
+      attributes: ['is_required'],
+    });
+    if(!res)
+      return {
+        code: false,
+        res: "There is some issue while adding the record.",
+      } ;
+      else return { code: true, res: res };
+  } catch (error) {
+    console.error('Error fetching question details:', error.message);
+    throw new Error('Error fetching question details');
+  }
+};
+
+export const getSurveyResponse = async ({ survey_code, question_id, user_id, id }) => {
+  try {
+    const res = await SurveyResponses.findOne({
+      where: { survey_code, question_id, user_id, response_id: id },
+    });
+
+    if (!res) {
+      return {
+        code: false,
+        res: "There is some issue while finding the survey response.",
+      };
+    }
+    return { code: true, res };
+  } catch (error) {
+    return { code: false, res: error.message };
+  }
+};
+
+export const updateSurveyResponse = async (update) => {
+  try {
+    const { survey_code, question_id, user_id, responses, response_id } = update;
+
+    const res = await SurveyResponses.update(
+      { responses },
+      { where: { survey_code, question_id, user_id, response_id: response_id } }
+    );
+
+    if (!res[0]) {
+      return {
+        code: false,
+        res: "There is some issue while updating the record.",
+      };
+    }
+    return { code: true, res };
+  } catch (error) {
+    return { code: false, res: error.message };
+  }
+};
+
+export const deleteSurveyResponses = async ({ survey_code, question_id, user_id }) => {
+  try {
+    const result = await SurveyResponses.destroy({
+      where: { survey_code, question_id, user_id },
+    });
+    return { code: true, res: result };
+  } catch (error) {
+    return { code: false, res: error.message };
+  }
+};
+
