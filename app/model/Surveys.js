@@ -362,7 +362,6 @@ export const GetAllSurveyByUserType = async(user_id,user_type) =>{
   else {
     return sendErrorResponse(res, "Unauthorized user type.");
   }
-  console.log("usersid......................",userIds);
   return userIds;
 }
 

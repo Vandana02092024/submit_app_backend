@@ -380,15 +380,11 @@ export const saveSurveyResponses = async (req, res) => {
   try {
     const question = await getQuestionDetails({ survey_code, question_id });
 
-    console.log("question",question)
-
     if (!question) {
       throw new Error(`Question with ID ${question_id} and Survey Code ${survey_code} not found.`);
     }
 
     const { is_required } =  question.res.dataValues;
-
-    console.log("is_required",is_required);
 
     if (is_required === 1) {
       if (answer === undefined || answer === null || answer === '') {
@@ -486,7 +482,6 @@ export const saveSurveyResponses = async (req, res) => {
     sendErrorResponse(res, 'Error saving responses');
   }
 };
-
 
 export const updateSurveyResponses = async (req, res) => {
   const user_id = req.userId;
