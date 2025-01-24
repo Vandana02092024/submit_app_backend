@@ -38,8 +38,12 @@ export const UserConnectedSurveys = sequelize.define(
     },
     user_id: { type: DataTypes.INTEGER },
     survey_code: { type: DataTypes.STRING },
+    status: { type: DataTypes.ENUM("0", "1") },
     created_at: { type: DataTypes.DATE },
     updated_at: { type: DataTypes.DATE },
+    completed_date: {
+      type: DataTypes.DATE,
+    },
   },
   { timestamps: false }
 );
@@ -54,6 +58,7 @@ export const Surveys = sequelize.define(
       autoIncrement: false,
     },
     survey_name: { type: DataTypes.STRING },
+    surveyDesc: { type: DataTypes.TEXT },
     user_id: { type: DataTypes.INTEGER },
     created_at: { type: DataTypes.DATE },
     updated_at: { type: DataTypes.DATE },
@@ -194,5 +199,16 @@ User.hasMany(UserConnectedSurveys, {
 UserConnectedSurveys.belongsTo(User, {
   foreignKey: {
     name: "user_id",
+  },
+});
+
+Surveys.hasMany(UserConnectedSurveys, {
+  foreignKey: {
+    name: "survey_code",
+  },
+});
+UserConnectedSurveys.belongsTo(Surveys, {
+  foreignKey: {
+    name: "survey_code",
   },
 });

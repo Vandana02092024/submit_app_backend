@@ -8,6 +8,7 @@ import MobAuth from "./app/routes/authMob.js";
 import apiKeyMiddleware, { verifyToken } from "./app/routes/middleware.js";
 import Survey from "./app/routes/surveys.js";
 import User from "./app/routes/users.js";
+import UserConnectedSurveys from "./app/routes/userConnectedSurveys.js";
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ app.use("/authenticate",apiKeyMiddleware, Auth);
 app.use("/auth", apiKeyMiddleware, MobAuth);
 app.use("/survey", apiKeyMiddleware, verifyToken, Survey);
 app.use("/users",apiKeyMiddleware,verifyToken,User);
+app.use("/userConnectedSurveys",apiKeyMiddleware,verifyToken,UserConnectedSurveys)
 
 app.get("/", (req, res) => {
   res.json("I am am wroking fine.");

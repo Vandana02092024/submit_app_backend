@@ -76,11 +76,11 @@ const generateSurveyCode = () => {
 
 export const AddSurvey = async (req, res) => {
     const survey_name  = req.body.survey_name;
+    const surveyDesc  = req.body.surveyDesc;
     const survey_code = generateSurveyCode();
     const user_id = req.userId;
-    const newSurvey = createSurvey({ survey_name, survey_code, user_id });
+    const newSurvey = createSurvey({ survey_name, survey_code, user_id,surveyDesc });
     sendSuccessResponse(res, 'Survey created successfully', newSurvey)
-
 };
 
 export const UpdateSurveyName = async (req, res) => {
@@ -377,6 +377,8 @@ export const saveSurveyResponses = async (req, res) => {
   const user_id = req.userId;
   const { survey_code, question_id, answer, question_type } = req.body;
 
+  console.log("req.body.................",req.body);
+
   try {
     const question = await getQuestionDetails({ survey_code, question_id });
 
@@ -384,24 +386,38 @@ export const saveSurveyResponses = async (req, res) => {
       throw new Error(`Question with ID ${question_id} and Survey Code ${survey_code} not found.`);
     }
 
-    const { is_required } =  question.res.dataValues;
-
-    if (is_required === 1) {
-      if (answer === undefined || answer === null || answer === '') {
-        throw new Error('This question is required. A response must be provided.');
-      }
-    } else if (is_required === 0) {
-      if (answer === undefined || answer === null || answer === '') {
-        sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
-        return;
-      }
-    }
-
     let fileUrl = null;
 
     if (req.file) {
       fileUrl = `assets/images/${req.file.filename}`;
     }
+
+    const { is_required } =  question.res.dataValues;
+
+    // if (is_required === 1) {
+    //   if (answer === undefined || answer === null || answer === '' || fileUrl=== null ) {
+    //     throw new Error('This question is required. A response must be provided.');
+    //   }
+    // } else if (is_required === 0) {
+    //   if (answer === undefined || answer === null || answer === '') {
+    //     sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
+    //     return;
+    //   }
+    // }
+
+    if (is_required === 1) {
+      if (!answer && !fileUrl) {
+        throw new Error('This question is required. A response must be provided.');
+      }
+    }
+    
+    if (['IMAGE_INPUT', 'VIDEO_INPUT', 'AUDIO_INPUT', 'SIGNATURE_INPUT'].includes(question_type)) {
+      if (!req.file) {
+        throw new Error(`File is required for ${question_type}.`);
+      }
+      fileUrl = `assets/images/${req.file.filename}`;
+    }
+  
 
     if (question_type === 'MULTISELECT') {
       if (!Array.isArray(answer)) {
@@ -494,22 +510,35 @@ export const updateSurveyResponses = async (req, res) => {
       throw new Error(`Question with ID ${question_id} and Survey Code ${survey_code} not found.`);
     }
 
-    const { is_required } = question.res.dataValues;
-
-    if (is_required === 1 && (answer === undefined || answer === null || answer === '')) {
-      throw new Error('This question is required. A response must be provided.');
-    }
-
-    if (is_required === 0 && (answer === undefined || answer === null || answer === '')) {
-      sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
-      return;
-    }
-
     let fileUrl = null;
     if (req.file) {
       fileUrl = `assets/images/${req.file.filename}`;
     }
 
+    const { is_required } = question.res.dataValues;
+
+    // if (is_required === 1 && (answer === undefined || answer === null || answer === '' || fileUrl === null)) {
+    //   throw new Error('This question is required. A response must be provided.');
+    // }
+
+    // if (is_required === 0 && (answer === undefined || answer === null || answer === '')) {
+    //   sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
+    //   return;
+    // }
+
+    if (is_required === 1) {
+      if (!answer && !fileUrl) {
+        throw new Error('This question is required. A response must be provided.');
+      }
+    }
+    
+    if (['IMAGE_INPUT', 'VIDEO_INPUT', 'AUDIO_INPUT', 'SIGNATURE_INPUT'].includes(question_type)) {
+      if (!req.file) {
+        throw new Error(`File is required for ${question_type}.`);
+      }
+      fileUrl = `assets/images/${req.file.filename}`;
+    }
+  
     const existingResponse = id 
       ? await getSurveyResponse({ survey_code, question_id, user_id, id }) 
       : null;
@@ -603,3 +632,4 @@ export const updateSurveyResponses = async (req, res) => {
     sendErrorResponse(res, `Error handling response: ${error.message}`);
   }
 };
+

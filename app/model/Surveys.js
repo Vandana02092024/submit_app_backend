@@ -467,6 +467,7 @@ export const findAllTheSurveyResponses = async(survey_code,questionId) =>{
 
 
 export const getQuestionDetails = async ({ survey_code, question_id }) => {
+  console.log("survey_code, question_id",survey_code, question_id)
   try {
     const res =  await SurveyQuestions.findOne({
       where: { survey_code, question_id },
