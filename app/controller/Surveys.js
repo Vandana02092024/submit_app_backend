@@ -40,7 +40,6 @@ export const FetchQuestionsDisplay = async (req, res) => {
   try {
     await FetchSurveyQuestionsDisplay(survey_code, conditions, res);
   } catch (error) {
-    console.error("Error:", error);
     return sendErrorResponse(res, "Error fetching survey questions");
   }
 };
@@ -203,7 +202,7 @@ export const FetchQuestionsWeb = async (req, res) => {
     const Ids = await GetAllSurveyByUserType(user_id,user_type);
 
     const options = {
-      attributes: ["survey_code", "survey_name", "user_id"],
+      attributes: ["survey_code", "survey_name", "user_id","surveyDesc"],
       order: [["survey_name", "DESC"]],
     };
 
@@ -266,7 +265,6 @@ export const FetchQuestionsWeb = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching survey details:", error);
     sendErrorResponse(res, "Failed to fetch survey details");
   }
 };
@@ -301,7 +299,6 @@ export const UpdateSurveyQuestion = async (req, res) => {
 
     sendSuccessResponse(res,`Updated survey Questions record(s)`);
   } catch (error) {
-    console.error(error);
     sendErrorResponse(res,'Survey not found');
   }
 };
@@ -326,7 +323,6 @@ export const getSurveyStatistics = async (req, res) => {
       uniqueUserCount: uniqueUserCount, 
     });
   } catch (error) {
-    console.error("Error fetching survey statistics:", error);
     sendErrorResponse(res, 500, "Failed to fetch survey statistics");
   }
 };
@@ -368,7 +364,6 @@ export const getAllCountByResponses = async(req,res) =>{
     sendSuccessResponse(res, "responses count fetched successfully",result);
 
   } catch(error){
-    console.error("Error fetching survey statistics:", error);
     sendErrorResponse(res, 500, "Failed to fetch count by Responses");
   }
 }
@@ -376,8 +371,6 @@ export const getAllCountByResponses = async(req,res) =>{
 export const saveSurveyResponses = async (req, res) => {
   const user_id = req.userId;
   const { survey_code, question_id, answer, question_type } = req.body;
-
-  console.log("req.body.................",req.body);
 
   try {
     const question = await getQuestionDetails({ survey_code, question_id });
@@ -387,24 +380,18 @@ export const saveSurveyResponses = async (req, res) => {
     }
 
     let fileUrl = null;
-
     if (req.file) {
-      fileUrl = `assets/images/${req.file.filename}`;
+      let folder = 'images'; 
+
+      if (/mp4|mov|avi/.test(req.file.mimetype)) {
+        folder = 'videos';
+      } else if (/mp3|wav/.test(req.file.mimetype)) {
+        folder = 'audio';
+      }
+
+      fileUrl = `assets/${folder}/${req.file.filename}`;
     }
-
     const { is_required } =  question.res.dataValues;
-
-    // if (is_required === 1) {
-    //   if (answer === undefined || answer === null || answer === '' || fileUrl=== null ) {
-    //     throw new Error('This question is required. A response must be provided.');
-    //   }
-    // } else if (is_required === 0) {
-    //   if (answer === undefined || answer === null || answer === '') {
-    //     sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
-    //     return;
-    //   }
-    // }
-
     if (is_required === 1) {
       if (!answer && !fileUrl) {
         throw new Error('This question is required. A response must be provided.');
@@ -494,7 +481,6 @@ export const saveSurveyResponses = async (req, res) => {
 
     sendSuccessResponse(res, 'Responses saved successfully!', '');
   } catch (error) {
-    console.error('Error saving responses:', error.message);
     sendErrorResponse(res, 'Error saving responses');
   }
 };
@@ -511,32 +497,29 @@ export const updateSurveyResponses = async (req, res) => {
     }
 
     let fileUrl = null;
+    let folder = 'images'; 
     if (req.file) {
-      fileUrl = `assets/images/${req.file.filename}`;
+      if (/mp4|mov|avi/.test(req.file.mimetype)) {
+        folder = 'videos';
+      } else if (/mp3|wav/.test(req.file.mimetype)) {
+        folder = 'audio';
+      }
+
+      fileUrl = `assets/${folder}/${req.file.filename}`;
     }
 
     const { is_required } = question.res.dataValues;
-
-    // if (is_required === 1 && (answer === undefined || answer === null || answer === '' || fileUrl === null)) {
-    //   throw new Error('This question is required. A response must be provided.');
-    // }
-
-    // if (is_required === 0 && (answer === undefined || answer === null || answer === '')) {
-    //   sendSuccessResponse(res, 'No response saved as it is optional and no answer was provided.', '');
-    //   return;
-    // }
-
     if (is_required === 1) {
-      if (!answer && !fileUrl) {
+      if ((answer === undefined || answer === null) && !fileUrl) {
         throw new Error('This question is required. A response must be provided.');
-      }
+    }
     }
     
     if (['IMAGE_INPUT', 'VIDEO_INPUT', 'AUDIO_INPUT', 'SIGNATURE_INPUT'].includes(question_type)) {
       if (!req.file) {
         throw new Error(`File is required for ${question_type}.`);
       }
-      fileUrl = `assets/images/${req.file.filename}`;
+      fileUrl = `assets/${folder}/${req.file.filename}`; 
     }
   
     const existingResponse = id 
@@ -628,7 +611,6 @@ export const updateSurveyResponses = async (req, res) => {
       sendErrorResponse(res, 'No response found to update, and insertion is not allowed.');
     }
   } catch (error) {
-    console.error('Error handling response:', error.message);
     sendErrorResponse(res, `Error handling response: ${error.message}`);
   }
 };

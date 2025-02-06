@@ -4,7 +4,6 @@ import { Op } from "sequelize";
 // ## FIND USER BY USERNAME ONLY //
 export const findUserByUsername = async (select, where) => {
   try {
-    console.log(select);
     const res = await User.findOne({
       attributes: select,
       where: where,
@@ -20,7 +19,6 @@ export const findUserByUsername = async (select, where) => {
 // ## SEARCH USER BY LOGIN CREDENTAILS //
 export const loginUser = async (select, credentials) => {
   try {
-    console.log(credentials);
     const res = await User.findOne({
       attributes: select,
       where: credentials, // { [Op.and]: credentials, },

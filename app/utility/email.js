@@ -23,7 +23,6 @@ export const SendEmail = async (to, subject, message) => {
     if (error) {
       return { status: false, error: error };
     } else {
-      console.log("Email sent: " + info.response);
       return { status: true, response: info.response };
     }
   });

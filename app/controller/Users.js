@@ -74,7 +74,6 @@ export const FetchUserDetails = async (req, res) => {
         },
       });
     } catch (error) {
-      console.error("Error fetching users details:", error);
       sendErrorResponse(res, "Failed to fetch users details");
     }
 };
@@ -130,7 +129,6 @@ export const changePassword = async (req, res) => {
       await updateUser({password: hashedPassword},user_id);
       sendSuccessResponse(res,"Password changed successfully.");
   } catch (error) {
-      console.error('Error changing password:', error);
       return sendErrorResponse(res, 'An error occurred while changing the password.');
   }
 };

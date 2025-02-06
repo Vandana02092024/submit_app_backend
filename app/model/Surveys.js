@@ -132,8 +132,7 @@ export const FetchSurveyQuestionsDisplay = async (survey_code, conditions, res) 
       },
     });
   } catch (error) {
-    console.error("Error fetching survey details:", error);
-    sendErrorResponse(res, "Failed to fetch survey details");
+    return { code: false, res: error.message };
   }
 };
 
@@ -238,7 +237,6 @@ export const createOption = async (insert) => {
     }
     return { code: true, res: res };
   } catch (error) {
-    console.error("Error in createOption:", error);
     return { code: false, res: error.message };
   }
 };
@@ -467,7 +465,6 @@ export const findAllTheSurveyResponses = async(survey_code,questionId) =>{
 
 
 export const getQuestionDetails = async ({ survey_code, question_id }) => {
-  console.log("survey_code, question_id",survey_code, question_id)
   try {
     const res =  await SurveyQuestions.findOne({
       where: { survey_code, question_id },
@@ -480,8 +477,7 @@ export const getQuestionDetails = async ({ survey_code, question_id }) => {
       } ;
       else return { code: true, res: res };
   } catch (error) {
-    console.error('Error fetching question details:', error.message);
-    throw new Error('Error fetching question details');
+    return { code: false, res: err.message };
   }
 };
 

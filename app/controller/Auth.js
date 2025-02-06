@@ -30,9 +30,6 @@ export const Register = async (req, res) => {
       let password = req.body.password;
       let conf_password = req.body.conf_password;
       var npassword = bcrypt.hashSync(password, salt);
-      console.log(salt);
-      console.log(`NPassword: ${npassword}`);
-      console.log(`password: ${password}`);
       const newUser = req.body;
       newUser.password = npassword;
 
@@ -40,7 +37,6 @@ export const Register = async (req, res) => {
       res.status(200).json({ data: user });
     }
   } catch (e) {
-    console.log(e);
     res.status(401).json(e);
   }
 };
@@ -56,7 +52,6 @@ export const LogIn = async (req, res) => {
     const exUser = await loginUser(select, where);
 
     if (exUser.code) {
-      console.log(exUser.res);
 
       const existingUser = {
         user_id: exUser.res.dataValues.id,
@@ -67,8 +62,6 @@ export const LogIn = async (req, res) => {
         expiresIn: "1h",
       });
 
-      console.log('token',token)
-
       const response = {
         token: token,
         user: {
@@ -77,8 +70,6 @@ export const LogIn = async (req, res) => {
           user_type: exUser.res.user_type,
         },
       };
-
-      console.log('response',response);
 
       // sendResponse(res, "success", response);
       res.status(200).json({ data: response });
@@ -160,15 +151,9 @@ export const AppSignUp = async (req, res) => {
 
       var exUser = await findUserByUsername(select, where);
       var rsUser = {};
-      
-      console.log(exUser.res.id);
       if (!exUser.code) {
         let password = pin;
-
         var npassword = bcrypt.hashSync(password, salt);
-        console.log(salt);
-        console.log(`NPassword: ${npassword}`);
-        console.log(`password: ${password}`);
         const newUser = {
           email: email,
           name: name,
@@ -218,7 +203,6 @@ export const AppSignUp = async (req, res) => {
         });
       }
     } catch (e) {
-      console.log(e);
       res.status(401).json(e);
     }
   } else res.status(400).json({ message: "Invalid arguments.", data: [] });
@@ -287,7 +271,6 @@ export const AppChangePin = async (req, res) => {
       const where = [{ email: email }];
 
       var exUser = await findUserByUsername(select, where);
-      console.log(exUser.res.id);
       if (!exUser.code) {
         res.status(404).json({
           message: "User account does not exist in our system.",
@@ -299,7 +282,6 @@ export const AppChangePin = async (req, res) => {
         var genpassword = bcrypt.hashSync(genpass.toString(), salt);
         var subject = "Password Change Request.";
         var message = `<h5>Dear User</h5> <p>Please find below your new password: <br /> <b>${genpass}</b></p>`;
-        console.log(message);
 
         var upPass = await updateUser({ password: genpassword }, userId);
         if (upPass.code) {
@@ -314,7 +296,6 @@ export const AppChangePin = async (req, res) => {
           });
       }
     } catch (e) {
-      console.log(e);
       res.status(401).json(e);
     }
   } else res.status(400).json({ message: "Invalid arguments.", data: [] });

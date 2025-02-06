@@ -6,7 +6,6 @@ export const comparePasswords = async (pass, enpass) => {
     const match = await bcrypt.compare(pass, enpass);
     return match;
   } catch (error) {
-    console.error("Error comparing passwords:", error);
     throw error;
   }
 };

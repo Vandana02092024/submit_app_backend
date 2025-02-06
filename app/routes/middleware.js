@@ -27,7 +27,6 @@ const verifyToken = (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized - Token missing" });
   }
   let tkn = token.replace("Bearer ", "");
-  console.log(tkn);
   jwt.verify(tkn, process.env.SECRET_KEY, (err, decoded) => {
     if (err) {
       return res.status(401).json({ message: "Unauthorized - Invalid token" });
